@@ -1,0 +1,7 @@
+install.packages('rmarkdown')
+install.packages('shiny')
+install.packages('googlesheets4')
+install.packages('leaflet')
+install.packages('emo')
+install.packages('knitr')
+install.packages('checkmate')
