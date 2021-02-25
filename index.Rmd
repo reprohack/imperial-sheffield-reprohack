@@ -1,30 +1,34 @@
 ---
-title: "CarpentryConnect Manchester 2019"
+title: "Imperial-Sheffield RSE ReproHack"
 output:
     html_document:
         theme: flatly
         css: reprohack.css
+        includes:
+          in_header: header.html
 params: 
-  title: "Awesome conference / organiser"
-  room_location: "Ada Lovelace Seminar Room, Dept. of Computer Science"
-  address: "The University of Sheffield, 211 Portobello, Sheffield S1 4DP"
-  date: "27th June 2019"
-  time: "9.30am-15:30pm"
+  title: "Imperial-Sheffield RSE ReproHack"
+  room_location: "Remote"
+  address: "Blackboard Collaborate"
+  date: "9th March 2021"
+  time: "10.00am - 17.00pm UTC"
   bannerurl: "reprohack-banner.png"
-  latitude: 53.38119
-  longitude: -1.48036
-  registration_url: null
-  hackpad_url: https://hackmd.io/link-to-copy-of-hackpad/edit
-  submission_url: https://link-to-submissionform
-  reprohack_repo_url: https://github.com/your_account/reprohack-location-ISOdate
-  submission_form_title: ReproHack Paper Submission Form - your event
+  latitude: null
+  longitude: null
+  registration_url: https://www.eventbrite.co.uk/e/imperialsheffield-reprohack-reproducibility-hackathon-tickets-141876007959
+  hackpad_url: https://hackmd.io/@annakrystalli/imperial-shef-rse/edit
+  submission_url: https://forms.gle/A3tvyU7GCXJh474W8
+  reprohack_repo_url: https://github.com/reprohack/imperial-sheffield-reprohack
+  submission_form_title: ReproHack Paper Submission Form - n8
+  feedback_form_title: ReproHack feedback form - n8
   marker_color: "blue"
 runtime: shiny
 ---
 
 ![](`r params$bannerurl`)
+![](imperial-logo.png) ![](rse-logoonly-stroke.png)![](tuos-logo.png)
 
-# **ReproHack @ `r params$title`**
+# **`r params$title`**
 ## _A hands-on Reproducibility Hackathon_
 
 <br>
@@ -35,39 +39,18 @@ runtime: shiny
 #### **`r shiny::icon("map-marked-alt")` `r params$address`**
   
 
-```{r, echo = F, results='asis'}
+```{r, echo = F}
+library("shiny")
+library("cpp11")
 if(!is.null(params$registration_url)){
-  cat(paste0("### [**REGISTER**](", params$registration_url, ")"))
+ wellPanel(a("REGISTER", class = "btn btn-primary btn-md",
+          href = params$registration_url))
 }
+
+
 ```
 
 [![Slack](https://img.shields.io/badge/slack-join%20us-brightgreen)](https://reprohack-autoinvite.herokuapp.com/)
-
-
-```{r out.width='100%', fig.height=6, eval=require('leaflet'), echo=FALSE, message=FALSE, warning=FALSE}
-library(leaflet)
-
-# Check that latitude & longitude exist and are both numeric
-if(checkmate::test_numeric(c(params$latitude, params$longitude))){
-  
-  # create map data data.frame
-  map_data <- data.frame(params$latitude, params$longitude) 
-  
-  # specify icon type for map
-  icons <- awesomeIcons(
-    icon = 'ios-close',
-    iconColor = 'black',
-    library = 'ion',
-    markerColor = params$marker_color
-  )
-  
-  # plot
-  map_data %>%
-    leaflet() %>%
-    addProviderTiles("CartoDB.Positron") %>%
-    addAwesomeMarkers(icon = icons)
-}
-```
 
 
 
@@ -146,7 +129,6 @@ We invite nominations for papers that have both associated **code** and **data**
 
 
 ```{r, echo=FALSE}
-library("shiny")
  wellPanel(a("Nominate Paper", class = "btn btn-primary btn-md",
           href = params$submission_url))
 ```
@@ -155,12 +137,6 @@ library("shiny")
 ## **Proposed papers:**
 
 <br>
-
-```{r, echo=FALSE, message=FALSE, warning=FALSE, eval=require('googlesheets4')}
-library(googlesheets4)
-options(gargle_oauth_cache = ".secrets",
-        gargle_oauth_email = TRUE)
-```
 
 ```{r, echo=FALSE}
 print_contact_links <- function(responses, i){
@@ -182,20 +158,82 @@ print_contact_links <- function(responses, i){
 }
 ```
 
+```{r, echo=FALSE, message=FALSE, warning=FALSE, eval=require('googledrive')}
+options(gargle_oauth_cache = ".secrets",
+        gargle_oauth_email = TRUE)
+googledrive::drive_auth()
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, eval=require('googlesheets4')}
+library(googlesheets4)
+match_length <- 45
+
+# Load paper list
+responses_gs <- sheets_find(paste(params$submission_form_title))
+responses <- sheets_read(responses_gs) %>%
+  dplyr::mutate(match_name = stringr::str_trunc(.data$`Paper title`, match_length) ) 
+
+# load feedback and process title name if available
+if(!is.null(params$feedback_form_title)){
+  feedback_gs <- sheets_find(paste(params$feedback_form_title))
+  feedback <- sheets_read(feedback_gs) %>% 
+    #dplyr::filter(.data$Timestamp < "2020-08-26 07:38:16 UTC") %>% 
+    dplyr::mutate(match_name = stringr::str_trunc(.data$`Which paper did you attempt?`, match_length) )
+  
+  # Join feedback to paper list responses
+  responses_joined <- fuzzyjoin::stringdist_left_join(feedback, responses, 
+                                                      by = c(match_name = "match_name"),
+                                                      max_dist = 10,
+                                                      method = "qgram",
+                                                      #method = "cosine",
+                                                      ignore_case = TRUE) %>%
+    dplyr::select(.data$`Paper title`,
+                  .data$`Which paper did you attempt?`, dplyr::everything()) %>%
+    assertr::verify(!is.na(.data$`Which paper did you attempt?`))
+  
+  # calculate mean reproducibility scores and number of attempts
+  stats <- dplyr::group_by(responses_joined, .data$`Paper title`) %>%
+    dplyr::summarise(no_attempts = dplyr::n(),
+                     mean_repro = mean(.data$`On a scale of 1 to 10, how much of the paper did you manage to reproduce?`) %>%
+                       round())
+  # Join stats to responses
+  responses <- dplyr::left_join(responses, stats)
+}
+```
+
 
 ```{r, message=FALSE, results='asis', warning=FALSE,  echo=FALSE}
-responses_gs <- sheets_find(paste(params$submission_form_title))
-responses <- sheets_read(responses_gs)
+row_n <- nrow(responses)
+set.seed(20210225)
 
-if(nrow(responses) > 0){
-
-for(i in 1:nrow(responses)){
+if(row_n > 0){
+  # create random index vector to randomise order of papers
+  random_ids <- sample.int(row_n)
+  
+  for(j in seq_len(row_n)){
+    i <- random_ids[j]
+    cat("<div class='card'>")
     cat('\n')     
     cat('\n')
     cat('\n')
     cat("### **", i,". ", as.character(responses[i, "Paper title"]), "**", "\n", "\n", sep = "")
-    cat("**", gsub("\n", "", gsub("[*]", "", as.character(responses[i, "Paper citation"]))), "\n**", "\n", "\n", sep = "")
-    cat("##### *submitted by ", as.character(responses[i, "Name"]),  print_contact_links(responses, i), "*", "\n")
+    cat("**", gsub("\n", "", gsub("[*]", "", 
+                                  as.character(responses[i, "Paper citation"]))),
+        "\n**", "\n", "\n", sep = "")
+    cat("##### *submitted by ", as.character(responses[i, "Name"]), 
+        print_contact_links(responses, i), "*", "\n")
+    # Print previous feedback information if included 
+    if("no_attempts" %in% names(responses)){
+      if(!is.na(responses[i, "no_attempts"])){
+        cat("*No. attempts <i class='fa fa-recycle'/>* ", 
+            as.character(responses[i, "no_attempts"]), "\n")}
+      if(!is.na(responses[i, "mean_repro"])){
+        cat("&nbsp; *Mean Repro Score <i class='fas fa-check-circle' />* ",
+            as.character(responses[i, "mean_repro"]), "/10 \n\n")
+      }
+    }
+    cat('*** \n')
     cat('\n')
     cat('\n')
     cat("**Why should we attempt to reproduce this paper?**", "\n", "\n")
@@ -208,9 +246,10 @@ for(i in 1:nrow(responses)){
     cat("**Code URL:**", as.character(responses[i, "Code URL"]), "\n")
     cat('\n', "\n")
     cat("**Useful programming skills:**", as.character(responses[i, "Useful programming skills"]), "\n")
+    cat("</div>")
     cat('\n', "\n",'\n')
-}
-
+  }
+  
 }
 ```
 
@@ -221,32 +260,43 @@ for(i in 1:nrow(responses)){
           href = "javascript:history.go(0)"))
 ```
 
+```{r, message=FALSE, results='asis', warning=FALSE,  echo=FALSE}
+if(checkmate::test_numeric(c(params$latitude, params$longitude))){
+  cat("*** \n")
+  cat("### Event location \n")
+}
+```
 
 
-***
-
-
-### Event location
-
-```{r out.width='100%', fig.height=6, eval=require('leaflet'), echo=FALSE}
+```{r out.width='100%', fig.height=6, eval=require('leaflet'), echo=FALSE, message=FALSE, warning=FALSE}
 library(leaflet)
-leaflet() %>% addTiles() %>% setView(params$longitude, params$latitude, zoom = 17) %>%
-  addMarkers(params$longitude, params$latitude)
+
+# Check that latitude & longitude exist and are both numeric
+if(checkmate::test_numeric(c(params$latitude, params$longitude))){
+
+  # create map data data.frame
+  map_data <- data.frame(latitude = params$latitude, 
+                         longitude = params$longitude) 
+  
+  # specify icon type for map
+  icons <- awesomeIcons(
+    icon = 'ios-close',
+    iconColor = 'black',
+    library = 'ion',
+    markerColor = params$marker_color
+  )
+  
+  # plot
+  map_data %>%
+    leaflet() %>%
+    addProviderTiles("CartoDB.Positron") %>%
+    addAwesomeMarkers(icon = icons)
+}
 ```
 
 
 
 
-***
-
-### ReproHack History
-
-
-ReproHacks were inspired by **Owen Petchey's** [**Reproducible Research in Ecology, Evolution, Behaviour, and Environmental Studies course**](https://github.com/opetchey/RREEBES), where students attempt to  reproduce the analyses and figures of a paper from the raw data. We wanted to attempt to do the same but, while they take a few months over a number of sessions, for our first event we only had one day. So to condense that activity into one day we set the challenge to be: **reproduce results from published data AND code**.
-
-We've run **two ReproHacks so far** as part of satellite OpenCon events (Berlin 2016, [London 2017](https://rse.shef.ac.uk/blog/opencon-london/)) with **a [series of them planned for 2019-2020](https://rse.shef.ac.uk/blog/ssi-fellowships-2019/) using funding provided through the [Software Sustainability Institute Fellowship programme](https://www.software.ac.uk/blog/2019-04-11-announcing-2019-software-sustainability-institute-fellows)**. 
-
-#### If you would like to host a ReproHack at your institution please get in touch!
 
 ***
 
