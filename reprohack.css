@@ -1,10 +1,13 @@
 h1.title {display: none;}
 
 body { 
+    background-image: linear-gradient(#11725E, #09C091);
     font-size: 18px;
-    line-height: 1.6;} 
+    line-height: 1.6;
+    color: white;
+} 
 
-h1, h2, h3, h4, h5, h6 { font-weight: bold; } 
+h1, h2, h3, h4, h5, h6 { font-weight: bold; color: white;} 
 
 h1 { font-size: 2em; } 
 h2 { font-size: 1.75em; } 
@@ -24,32 +27,40 @@ h6 { font-size: 1.25em; }
 }
 
 a:link {
-  color: #071059;
+  color: #82f2d4;
 }
 
 /* visited link */
 a:visited {
-  color: #071059;
+  color: #82f2d4;
 }
 
 /* mouse over link */
 a:hover {
-  color: #4DB797;
+  color: #b009f2;
 }
 
 /* selected link */
 a:active {
-  color: #071059;
+  color: #82f2d4;
 }
 
 .btn-primary:link, .btn-primary:visited, .btn-primary:hover, .btn-primary:active {
     color: white;
+    border: white;
     font-weight: bold;
+    background-image: linear-gradient(#11725E, #b009f2);
+}
+
+.well {
+  background-color: transparent;
+  border: transparent;
+  padding: 0px;
 }
 
 .card {
-  background-color: #ECF0F1;
-  border: 5px solid #2C3D50;
+  background-color: #11725E;
+  border: 5px solid #82f2d4;
   padding: 50px;
   margin: 20px;
   overflow-wrap: break-word;
