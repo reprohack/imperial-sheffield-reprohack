@@ -47,16 +47,6 @@ Contains all event information and links to materials
 
 #### _Anna, Jeremy_
 
----
-
-## ReproHack hackpad `r emo::ji("right_arrow")`   [hackmd.io](https://hackmd.io/s/features) notepad
-
-
-```{r, echo=FALSE, out.width="90%"}
-knitr::include_graphics("assets/hackmd.png")
-```
-
-
 
 ---
 class: inverse, center, middle
@@ -104,6 +94,16 @@ class: inverse, center, middle
 **16:15 Regroup - get someone from each group to tell us a bit about their experiences.**
 
 **16:45 Closing**
+
+---
+
+## ReproHack hackpad `r emo::ji("right_arrow")`   [hackmd.io](https://hackmd.io/s/features) notepad
+
+
+```{r, echo=FALSE, out.width="90%"}
+knitr::include_graphics("assets/hackmd.png")
+```
+
 
 
 ---
